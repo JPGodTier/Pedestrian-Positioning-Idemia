@@ -4,21 +4,13 @@ import pandas as pd
 import os
 import yaml
 import datetime
+import time
 
 from src.DataLoader.DataLoader import KeypointsDataset, csv_string_to_list
 from src.Models.Mlp import MLP
 from src.Training.Trainer import train_model
 from src.Training.Evaluator import evaluate_model
-from src.Common.utils import log_model_results
-
-
-# -----------------------------------------------------------------------------
-# load_config
-# -----------------------------------------------------------------------------
-def load_config(config_path):
-    with open(config_path, 'r') as file:
-        p_config = yaml.safe_load(file)
-    return p_config
+from src.Common.utils import log_model_results, load_config
 
 
 # -----------------------------------------------------------------------------
@@ -35,6 +27,8 @@ def prepare_data(data_path):
 # -----------------------------------------------------------------------------
 # MODEL LOGIC
 # -----------------------------------------------------------------------------
+start_time = time.time()
+
 # Setup
 config = load_config(os.path.join(os.getcwd(), "config", "config.yaml"))
 device = torch.device(config['device'] if torch.cuda.is_available() else "cpu")
@@ -73,7 +67,15 @@ model = MLP(input_size, config['model']['output_size'], config['model']['layers'
 # Training and retrieving best RMSE
 optimizer = torch.optim.Adam(model.parameters(), lr=config['training']['learning_rate'])
 loss_function = torch.nn.MSELoss()
-best_rmse, best_epoch = train_model(model, train_loader, val_loader, optimizer, loss_function, config['training']['epochs'], device, exp_path, occlusion_params)
+best_rmse, best_epoch = train_model(model,
+                                    train_loader,
+                                    val_loader,
+                                    optimizer,
+                                    loss_function,
+                                    config['training']['epochs'],
+                                    device,
+                                    exp_path,
+                                    occlusion_params)
 
 # -----------------------------------------------------------------------------
 # POST-TRAINING ACTIONS
@@ -97,3 +99,6 @@ performance_data = {
 }
 log_model_results(performance_data, csv_file=os.path.join(models_path, "model_performance_logs.csv"))
 print("Model Performance saved.")
+
+end_time = time.time()
+print(f"Execution Time: {end_time - start_time:.2f} seconds")

@@ -5,7 +5,7 @@ import os
 import random
 
 from src.Training.Evaluator import evaluate_model
-from src.ImageParser.ImageProcessor import ImageProcessor
+from src.ImageProcessor.ImageProcessor import ImageProcessor
 
 
 def train_model(model, train_loader, val_loader, optimizer, loss_function: torch.nn, epochs, device, model_path, occlusion_params):
@@ -33,7 +33,7 @@ def train_model(model, train_loader, val_loader, optimizer, loss_function: torch
     val_loss_list = []
 
     # Initializing learning rate scheduler
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.05, patience=5, verbose=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.05, patience=5)
 
     for epoch in range(epochs):
         total_loss = 0
