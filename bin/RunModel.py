@@ -48,9 +48,15 @@ exp_path = os.path.join("models", exp_name)
 os.makedirs(exp_path, exist_ok=True)
 
 # Train occlusion settings
+occ_chance = config["occultation"]["occlusion_chance"]
+box_scale = config["occultation"]["box_scale_factor"]
+box_scale = (box_scale[0], box_scale[1])
+weight_value = config["occultation"]["weight_value"]
+min_visible_threshold = config["occultation"]["min_visible_threshold"]
+noise_per_keypoint = config["occultation"]["noise_per_keypoint"]
 occlusion_params = {
-    'box_occlusion': {'occlusion_chance': 0.8, 'box_scale_factor': (0.5, 1)},
-    'keypoints_occlusion': {'weight_position': "upper_body", 'weight_value': 0.7, 'min_visible_threshold': 5}
+    'box_occlusion': {'occlusion_chance': occ_chance, 'box_scale_factor': box_scale},
+    'keypoints_occlusion': {'weight_position': "upper_body", 'weight_value': weight_value, 'min_visible_threshold': min_visible_threshold, "noise_level": noise_per_keypoint }
 }
 
 # Data Preparation
