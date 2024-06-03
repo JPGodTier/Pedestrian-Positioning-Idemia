@@ -10,6 +10,7 @@ def main():
 
     # COCO Training
     train_file = os.path.join(os.getcwd(),
+                              "Databases",
                               "Coco",
                               "annotations_trainval2017",
                               "person_keypoints_train2017.json")
@@ -20,7 +21,7 @@ def main():
     save_to_csv(os.path.join(os.getcwd(), "data", "MLP_Approach", "train", "coco_train_data.csv"), headers, coco_train_data)
 
     # OCHumans Training
-    train_file = os.path.join(os.getcwd(),
+    train_file = os.path.join(os.getcwd(), "Databases",
                               "OCHumans",
                               "annotations",
                               "ochuman_coco_format_test_range_0.00_1.00.json")
@@ -37,6 +38,7 @@ def main():
 
     # Validation
     val_file = os.path.join(os.getcwd(),
+                            "Databases",
                             "Coco",
                             "annotations_trainval2017",
                             "person_keypoints_val2017.json")

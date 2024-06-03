@@ -111,7 +111,10 @@ def process_image(detector, images_paths, row, confidence_threshold):
     if inferred_keypoints is None or np.isnan(inferred_keypoints).any():
         return None, True
 
-    updated_keypoints = zero_out_low_confidence_keypoints(inferred_keypoints, confidence_threshold)
+    if confidence_threshold == -1:
+        updated_keypoints = inferred_keypoints
+    else:
+        updated_keypoints = zero_out_low_confidence_keypoints(inferred_keypoints, confidence_threshold)
 
     # Normalize inferred keypoints
     normalized_bbox = bbox.copy()
@@ -164,9 +167,9 @@ def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path):
     headers = ["origin", "img_id", "pedestrian_id", "bbox", "keypoints", "target"]
 
     # Images Paths
-    coco_train_path = os.path.join(os.getcwd(), "Coco", "train2017", "train2017")
-    coco_val_path = os.path.join(os.getcwd(), "Coco", "val2017")
-    och_train_path = os.path.join(os.getcwd(), "OCHumans", "images", "images")
+    coco_train_path = os.path.join(os.getcwd(), "Databases", "Coco", "train2017", "train2017")
+    coco_val_path = os.path.join(os.getcwd(), "Databases","Coco", "val2017")
+    och_train_path = os.path.join(os.getcwd(), "Databases","OCHumans", "images", "images")
     train_image_paths = {"coco": coco_train_path, "ochumans": och_train_path}
     val_image_paths = {"coco": coco_val_path}
 
