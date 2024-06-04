@@ -3,6 +3,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import plotly.graph_objects as go
 import os
 import random
+import time
 
 from src.Training.Evaluator import evaluate_model
 from src.ImageProcessor.ImageProcessor import ImageProcessor
@@ -36,11 +37,11 @@ def train_model(model, train_loader, val_loader, optimizer, loss_function: torch
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.05, patience=5)
 
     for epoch in range(epochs):
+        start_time = time.time()
         total_loss = 0
 
         for _, bbox, inputs, targets in train_loader:
             inputs, targets, bbox = inputs.to(device), targets.to(device), bbox.to(device)
-
             # Apply dynamic occlusion based on a random choice
             occlusion_type = random.choice(['no_occlusion', 'box_occlusion', 'keypoints_occlusion'])
             if occlusion_type == 'box_occlusion':
@@ -56,7 +57,6 @@ def train_model(model, train_loader, val_loader, optimizer, loss_function: torch
             elif occlusion_type == 'no_occlusion':
                 # do nothing
                 pass
-
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = loss_function(outputs, targets)
@@ -85,7 +85,7 @@ def train_model(model, train_loader, val_loader, optimizer, loss_function: torch
             torch.save(model.state_dict(), best_model_path)
 
         print(f"Epoch {epoch + 1}/{epochs} - Average Training Loss: {avg_loss:.4f}, Validation RMSE: {val_rmse:.4f}")
-
+        print(f"Elapsed time: {time.time() - start_time:.2f}s")
     # Save the training loss graph
     save_loss_graph_go(loss_list, model_path, "training")
     save_loss_graph_go(loss_list, model_path, "validation")

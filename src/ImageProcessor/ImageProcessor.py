@@ -332,7 +332,7 @@ class ImageProcessor:
 
             for i in range(keypoints_reshaped.size(0)):
                 if non_visible_count > min_visible_threshold:
-                    break  # Stop if   reach the visibility threshold
+                    break  # Stop if reach the visibility threshold
 
                 if keypoints_reshaped[i, 2] > 0:  # Check if the keypoint is visible
                     if (weight_position == "lower_body" and i in range(11, len(keypoints_reshaped))) or \
@@ -392,15 +392,21 @@ class ImageProcessor:
             # Normalize keypoints with the occluded box
             # Convert keypoints to list, normalize, and convert back to tensor
             normalized_kps_list, _ = ImageProcessor.normalize_keypoints(keypoints.cpu().tolist(),
-                                                                        [0, 0, box_occluded[2], box_occluded[3]])
-            normalized_kps = torch.tensor(normalized_kps_list, dtype=torch.float32).to(device)
+                                                                        [0,
+                                                                         0,
+                                                                         box_occluded[2].item(),
+                                                                         box_occluded[3].item()])
+            normalized_kps = torch.tensor(normalized_kps_list, dtype=torch.float32, device=device)
 
             # Temporarily add a visibility value to target for normalization
-            target_with_visibility = torch.cat((target, torch.tensor([2], dtype=torch.float32, device=device)))
+            target_with_visibility = torch.cat((target, torch.tensor([2.0], dtype=torch.float32, device=device)))
 
             # Normalize target with the occluded box
             normalized_target_list, _ = ImageProcessor.normalize_keypoints(target_with_visibility.cpu().tolist(),
-                                                                           [0, 0, box_occluded[2], box_occluded[3]])
+                                                                           [0,
+                                                                            0,
+                                                                            box_occluded[2].item(),
+                                                                            box_occluded[3].item()])
 
             # Convert back to tensor and remove the temporary visibility value
             normalized_target = torch.tensor(normalized_target_list[:-1], dtype=torch.float32).to(device)
