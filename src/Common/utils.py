@@ -4,6 +4,7 @@ import os
 import numpy as np
 import math
 import yaml
+import torch
 import matplotlib.pyplot as plt
 from PIL import Image
 from pycocotools.coco import COCO
@@ -170,3 +171,15 @@ def visualize_specific_pedestrian_local(annotation_file, images_folder_path, ima
 # -----------------------------------------------------------------------------
 def calculate_euclidean_distance(pred, truth):
     return np.sqrt(np.sum((np.array(pred) - np.array(truth))**2))
+
+
+# -----------------------------------------------------------------------------
+# load_mlp_model
+# -----------------------------------------------------------------------------
+def load_mlp_model(device, model_path, input_size, output_size, layers):
+    from src.Models.Mlp import MLP
+    model = MLP(input_size, output_size, layers)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    model.to(device)
+    return model

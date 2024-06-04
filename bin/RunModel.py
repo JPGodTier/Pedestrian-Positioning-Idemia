@@ -2,14 +2,12 @@ import torch
 from torch.utils.data import DataLoader
 import pandas as pd
 import os
-import yaml
 import datetime
 import time
 
 from src.DataLoader.DataLoader import KeypointsDataset, csv_string_to_list
 from src.Models.Mlp import MLP
 from src.Training.Trainer import train_model
-from src.Training.Evaluator import evaluate_model
 from src.Common.utils import log_model_results, load_config
 
 
@@ -67,6 +65,7 @@ model = MLP(input_size, config['model']['output_size'], config['model']['layers'
 # Training and retrieving best RMSE
 optimizer = torch.optim.Adam(model.parameters(), lr=config['training']['learning_rate'])
 loss_function = torch.nn.MSELoss()
+
 best_rmse, best_epoch = train_model(model,
                                     train_loader,
                                     val_loader,
