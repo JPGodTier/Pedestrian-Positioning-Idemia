@@ -37,7 +37,7 @@ def main(video_path):
             print("Error: Frame could not be read.")
             break
 
-        frame = resize_frame(frame, width_scale=30, height_scale=30)
+        frame = resize_frame(frame, width_scale=40, height_scale=30)
         predictions, scores, keypoints_list = pipeline_processor.detect_people(frame)
 
         for box, score, keypoints_info in zip(predictions, scores, keypoints_list):
@@ -50,7 +50,7 @@ def main(video_path):
                 abs_x, abs_y = int(x1 + feet_2d_position[0] * width), int(y1 + feet_2d_position[1] * height)
                 cv2.circle(frame, (abs_x, abs_y), 5, (0, 0, 255), -1)
 
-                world_point = pipeline_processor.calibration.estimate_3d_point_pinv(abs_x, abs_y)
+                world_point = pipeline_processor.calibration.estimate_3d_point_pinv_idemia(abs_x, abs_y)
                 world_coords = f"Feet 3D: ({world_point[0]:.2f}, {world_point[1]:.2f}, {world_point[2]:.2f})"
                 cv2.putText(frame, world_coords, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1)
 
@@ -60,7 +60,7 @@ def main(video_path):
                     cv2.circle(frame, (abs_x, abs_y), 3, (0, 255, 0), -1)
 
         cv2.imshow('Frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(0) & 0xFF == ord('q'):
             break
 
     cap.release()
