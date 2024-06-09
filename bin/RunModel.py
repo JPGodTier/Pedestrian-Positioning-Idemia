@@ -57,8 +57,7 @@ noise_per_keypoint = config["occultation"]["noise_per_keypoint"]
 occlusion_params = {
     'box_occlusion': {'occlusion_chance': occ_chance, 'box_scale_factor': box_scale},
     'keypoints_occlusion': {'weight_position': weight_position, 'weight_value': weight_value,
-                            'min_visible_threshold': min_visible_kps, "noise_level": noise_per_keypoint}
-}
+                            'min_visible_threshold': min_visible_kps, "noise_level": noise_per_keypoint}}
 
 # Data Preparation
 train_dataset = prepare_data(config['data']['train_path'])
