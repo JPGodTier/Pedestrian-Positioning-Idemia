@@ -12,3 +12,19 @@ cnn:
   model_path: data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip
   confidence_threshold: 0.5
 device: cuda
+occultation:
+    noise_per_keypoint: [0.026, # Nose
+                        0.025, 0.025, # Eyes
+                        0.035, 0.035, # Ears
+                        0.079, 0.079, # Shoulders
+                        0.072, 0.072, # Elbows
+                        0.062, 0.062, # Wrists
+                        0.107, 0.107, # Hips
+                        0.087, 0.087, # Knees
+                        0.089,  0.089] # Ankles
+    min_visible_kps: 5
+    visibility_threshold: 70
+    occlusion_chance: 0.8
+    box_scale_factor: [0.5, 1]
+    weight_value: 0.7
+    weight_position: "upper_body"

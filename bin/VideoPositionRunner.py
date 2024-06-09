@@ -53,7 +53,7 @@ def main(video_path):
             print("Error: Frame could not be read.")
             break
 
-        predictions, scores, keypoints_list = pipeline_processor.detect_people2(frame)
+        predictions, scores, keypoints_list = pipeline_processor.detect_people(frame)
 
         if keypoints_list:
             keypoints, bbox = keypoints_list
