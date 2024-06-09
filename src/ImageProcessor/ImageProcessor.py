@@ -205,7 +205,7 @@ class ImageProcessor:
 
     @staticmethod
     def apply_keypoints_occlusion(keypoints, weight_position="", weight_value=0.7,
-                                  min_visible_threshold=5, noise_level=0.15):
+                                  min_visible_threshold=5, noise_level=[]):
         """
         Applies occlusion to keypoints and normalizes both keypoints and target based on specified parameters.
 
@@ -221,6 +221,8 @@ class ImageProcessor:
             tuple: Tuple containing occluded and normalized keypoints.
         """
         visible_count = sum(1 for i in range(2, len(keypoints), 3) if keypoints[i] > 0)
+        if not noise_level:
+            noise_level = [0.01] * (len(keypoints) // 3)
 
         # If already below the threshold, return original keypoints and target
         if visible_count <= min_visible_threshold:
@@ -249,6 +251,8 @@ class ImageProcessor:
             if should_occlude:
                 visible_count -= 1
                 # Generate noise for x and y
+                noise_x = random.uniform(-noise_level[i], noise_level[i])
+                noise_y = random.uniform(-noise_level[i], noise_level[i])
                 noise_x = random.uniform(-noise_level, noise_level)
                 noise_y = random.uniform(-noise_level, noise_level)
 
@@ -303,7 +307,7 @@ class ImageProcessor:
     # apply_keypoints_occlusion
     # -----------------------------------------------------------------------------
     @staticmethod
-    def apply_keypoints_occlusion_tensor(inputs, weight_position="", weight_value=0.7, min_visible_threshold=5, noise_level=0.15):
+    def apply_keypoints_occlusion_tensor(inputs, weight_position="", weight_value=0.7, min_visible_threshold=5, noise_level=[]):
         """Applies occlusion to keypoints tensors based on visibility and specified biasing towards body parts.
 
         Args:
@@ -321,6 +325,8 @@ class ImageProcessor:
             Tensor: A tensor of the same shape as 'inputs' with occluded keypoints based on the specified parameters.
         """
         occluded_inputs = inputs.clone()
+        if not noise_level:
+            noise_level = [0.01] * (inputs.size(1))
 
         for idx, keypoints in enumerate(occluded_inputs):
             keypoints_reshaped = keypoints.view(-1, 3)  # Reshape to have 3 elements per row
@@ -332,7 +338,7 @@ class ImageProcessor:
 
             for i in range(keypoints_reshaped.size(0)):
                 if non_visible_count > min_visible_threshold:
-                    break  # Stop if reach the visibility threshold
+                    break  # Stop if we reach the visibility threshold
 
                 if keypoints_reshaped[i, 2] > 0:  # Check if the keypoint is visible
                     if (weight_position == "lower_body" and i in range(11, len(keypoints_reshaped))) or \
@@ -342,9 +348,10 @@ class ImageProcessor:
                         occlusion_chance = 1 - weight_value
 
                     if random.random() < occlusion_chance:
-                        noise = torch.randn(2) * noise_level  # Generate random noise for x and y
+                        noise = torch.randn(2) * noise_level[i]  # Generate random noise for x and y
                         x_noisy = keypoints_reshaped[i, 0] + noise[0]
                         y_noisy = keypoints_reshaped[i, 1] + noise[1]
+
                         # Apply noise and set visibility to 0
                         occluded_inputs[idx, 3 * i:3 * i + 3] = torch.tensor([x_noisy, y_noisy, 0], dtype=torch.float32)
                         non_visible_count += 1
