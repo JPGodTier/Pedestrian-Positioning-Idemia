@@ -1,0 +1,14 @@
+model:
+  output_size: 2
+  layers: [256, 128, 64, 32]
+training:
+  epochs: 50
+  batch_size: 16
+  learning_rate: 0.0001
+data:
+  train_path: data/MLP_Approach/train/train_data.csv
+  validation_path: data/MLP_Approach/validation/val_data_with_occultation.csv
+cnn:
+  model_path: data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip
+  confidence_threshold: 0.5
+device: cuda
