@@ -21,6 +21,9 @@ class Pipeline3DProcessor:
         self.mlp_model.eval()
         self.mlp_model.to(device)
 
+    # -----------------------------------------------------------------------------
+    # load_mlp_model
+    # -----------------------------------------------------------------------------
     def load_mlp_model(self, model_path, mlp_settings):
         model = load_mlp_model(self.device,
                                model_path,
@@ -29,6 +32,9 @@ class Pipeline3DProcessor:
                                mlp_settings["layers"])
         return model
 
+    # -----------------------------------------------------------------------------
+    # normalize_keypoints
+    # -----------------------------------------------------------------------------
     @staticmethod
     def normalize_keypoints(keypoints, bbox):
         normalized_keypoints = []
@@ -40,12 +46,29 @@ class Pipeline3DProcessor:
             normalized_keypoints.extend([norm_x, norm_y, conf])
         return normalized_keypoints
 
+    # -----------------------------------------------------------------------------
+    # zero_out_low_confidence_keypoints
+    # -----------------------------------------------------------------------------
+    @staticmethod
+    def zero_out_low_confidence_keypoints(keypoints, threshold=0.5):
+        """Set keypoints confidence to zero if below a given threshold."""
+        for i in range(2, len(keypoints), 3):
+            if keypoints[i] < threshold:
+                keypoints[i] = 0  # Zero out confidence
+        return keypoints
+
+    # -----------------------------------------------------------------------------
+    # infer_2d_position
+    # -----------------------------------------------------------------------------
     def infer_2d_position(self, keypoints):
         input_tensor = torch.tensor(keypoints, dtype=torch.float32).unsqueeze(0).to(self.device)
         with torch.no_grad():
             prediction = self.mlp_model(input_tensor).squeeze().tolist()
         return prediction
 
+    # -----------------------------------------------------------------------------
+    # rtm_infer
+    # -----------------------------------------------------------------------------
     def rtm_infer(self, frame, bbox):
         try:
             bbox = np.array(bbox, dtype=int)
@@ -54,11 +77,17 @@ class Pipeline3DProcessor:
             inference_result = self.model_detector(frame, bbox)
             keypoints = inference_result[0, :-2, :].reshape(-1).tolist()
 
-            return keypoints
+            # Zeroise low confidence kps
+            updated_kps = self.zero_out_low_confidence_keypoints(keypoints)
+
+            return updated_kps
         except Exception as e:
             print(f"Inference failed: {str(e)}")
             return None
 
+    # -----------------------------------------------------------------------------
+    # detect_people
+    # -----------------------------------------------------------------------------
     def detect_people(self, frame, threshold=0.9):
         frame_tensor = functional.to_tensor(frame).unsqueeze(0).to(self.device)
         with torch.no_grad():
@@ -67,17 +96,32 @@ class Pipeline3DProcessor:
         pred_scores = predictions[0]['scores']
         pred_boxes = predictions[0]['boxes']
 
-        filtered_indices = [i for i, (cls, score) in enumerate(zip(pred_classes, pred_scores))
-                            if cls == 1 and score > threshold]
+        # Filter detections based on the class label and score threshold
+        filtered_indices = [
+            i for i, (cls, score) in enumerate(zip(pred_classes, pred_scores))
+            if cls == 1 and score > threshold
+        ]
         high_conf_boxes = pred_boxes[filtered_indices]
         high_conf_scores = pred_scores[filtered_indices]
 
-        keypoints_list = []
-        for box in high_conf_boxes:
-            x1, y1, x2, y2 = map(int, box.tolist())
-            bbox = [x1, y1, x2 - x1, y2 - y1]
-            inferred_keypoints = self.rtm_infer(frame, bbox)
-            normalized_keypoints = self.normalize_keypoints(inferred_keypoints, bbox)
-            keypoints_list.append((normalized_keypoints, bbox))
+        # Calculate the center of the frame
+        frame_center = torch.tensor([frame.shape[1] / 2, frame.shape[0] / 2])
 
-        return high_conf_boxes.cpu(), high_conf_scores.cpu(), keypoints_list
+        # Select the most centrally located box
+        if len(high_conf_boxes) > 0:
+            main_index = min(range(len(high_conf_boxes)), key=lambda i: torch.norm(torch.tensor([
+                (high_conf_boxes[i][0] + high_conf_boxes[i][2]) / 2,
+                (high_conf_boxes[i][1] + high_conf_boxes[i][3]) / 2
+            ]) - frame_center))
+            main_box = high_conf_boxes[main_index]
+            main_score = high_conf_scores[main_index]
+        else:
+            return None, None, []
+
+        # Calculate the bounding box dimensions
+        x_min, y_min, x_max, y_max = map(int, main_box.tolist())
+        bbox = [x_min, y_min, x_max - x_min, y_max - y_min]
+        inferred_keypoints = self.rtm_infer(frame, bbox)
+        normalized_keypoints = self.normalize_keypoints(inferred_keypoints, bbox)
+
+        return main_box.cpu(), main_score.cpu(), (normalized_keypoints, bbox)
