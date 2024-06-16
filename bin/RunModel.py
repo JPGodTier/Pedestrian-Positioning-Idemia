@@ -24,7 +24,8 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 
-set_seed(7495)
+seed = 7495
+set_seed(seed)
 
 
 # -----------------------------------------------------------------------------
@@ -96,6 +97,7 @@ with mlflow.start_run():
     # Loging with MLFLOW
     mlflow.log_param("File Name", exp_name)
     mlflow.log_param("Data Info", "Annotations only")
+    mlflow.log_param("Seed", seed)
     mlflow.log_params(config['data'])
     mlflow.log_params(config['occultation'])
     mlflow.log_params(config['training'])
@@ -142,4 +144,3 @@ print("Model Performance saved.")
 
 end_time = time.time()
 print(f"Execution Time: {end_time - start_time:.2f} seconds")
-mlflow.log_metric("Execution Time (s)", end_time)
