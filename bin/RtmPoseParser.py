@@ -25,6 +25,8 @@ def zero_out_low_confidence_keypoints(keypoints, threshold=0.5):
     for i in range(2, len(keypoints), 3):
         if keypoints[i] < threshold:
             keypoints[i] = 0  # Zero out confidence
+        else:
+            keypoints[i] = 1
     return keypoints
 
 
@@ -45,14 +47,27 @@ def rtm_infer(detector, img_path, bbox: list):
         return None
 
     img = cv2.imread(img_path)
-    if img is None:
-        logging.error(f"Failed to load image at {img_path}")
+    if img is None or img.size == 0:
+        logging.error(f"Failed to load image or image is empty at {img_path}")
         return None
 
     try:
         # Prepare bbox for inference.
+        if not bbox or len(bbox) < 4:
+            logging.error(f"Invalid bbox: {bbox}")
+            return None
+
         bbox = np.array(bbox, dtype=int)
         bbox[2:] += bbox[:2]  # Convert from [x, y, w, h] to [x1, y1, x2, y2]
+        if bbox[2] <= bbox[0] or bbox[3] <= bbox[1]:
+            logging.error(f"Invalid converted bbox: {bbox}")
+            return None
+
+        img_height, img_width = img.shape[:2]
+        if bbox[0] < 0 or bbox[1] < 0 or bbox[2] > img_width or bbox[3] > img_height:
+            logging.error("Invalid bbox")
+            return None
+
         inference_result = detector(img, bbox).reshape(-1).tolist()
         return inference_result
     except Exception as e:
@@ -143,21 +158,29 @@ def create_rtm_csv_parallel(detector, images_paths, input_csv, confidence_thresh
     results = []
     error_count = 0
 
-    # Use ThreadPoolExecutor to parallelize image processing
-    with ThreadPoolExecutor(max_workers=None) as executor:
-        futures = [executor.submit(process_image, detector, images_paths, row, confidence_threshold)
-                   for row in df.itertuples()]
-        for future in futures:
-            result, error = future.result()
-            if error:
-                error_count += 1
-            elif result:
-                results.append(result)
+    total_images = len(df)
+
+    # Sequentially process each row in the DataFrame
+    for index, row in enumerate(df.itertuples(), 1):
+        try:
+            result, error = process_image(detector, images_paths, row, confidence_threshold)
+        except Exception as e:
+            print("Processing error: {}".format(e))
+            continue
+        if error:
+            error_count += 1
+        elif result:
+            results.append(result)
+
+        if index % 10 == 0 or index == total_images:
+            print(f"Processed {index}/{total_images} images. Errors so far: {error_count}")
+
+    print(f"Completed processing. Total images processed: {total_images}. Errors encountered: {error_count}")
 
     return results, error_count
 
 
-def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path):
+def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path, generate_validation=True):
     try:
         model_path = cnn_path
         model_detector = PoseDetector(model_path=model_path, device_name="cpu", device_id=0)
@@ -168,8 +191,8 @@ def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path):
 
     # Images Paths
     coco_train_path = os.path.join(os.getcwd(), "Databases", "Coco", "train2017", "train2017")
-    coco_val_path = os.path.join(os.getcwd(), "Databases","Coco", "val2017")
-    och_train_path = os.path.join(os.getcwd(), "Databases","OCHumans", "images", "images")
+    coco_val_path = os.path.join(os.getcwd(), "Databases", "Coco", "val2017")
+    och_train_path = os.path.join(os.getcwd(), "Databases", "OCHumans", "images", "images")
     train_image_paths = {"coco": coco_train_path, "ochumans": och_train_path}
     val_image_paths = {"coco": coco_val_path}
 
@@ -179,11 +202,12 @@ def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path):
     print(f"Processed {len(rtm_train_data)} images and saved to train_data_RTMpose.csv\nFailed images : {error_count}")
 
     # RTM Val data creation
-    rtm_val_data, error_count = create_rtm_csv_parallel(model_detector, val_image_paths, csv_val_file)
-    coco_val_parser = ImageProcessor()
-    occluded_data = coco_val_parser.apply_dynamic_occlusion_to_csv(rtm_val_data)
-    save_to_csv(val_out_path, headers, occluded_data)
-    print(f"Processed {len(rtm_val_data)} images and saved to val_data_RTMpose.csv\nFailed images : {error_count}")
+    if generate_validation:
+        rtm_val_data, error_count = create_rtm_csv_parallel(model_detector, val_image_paths, csv_val_file)
+        coco_val_parser = ImageProcessor()
+        occluded_data = coco_val_parser.apply_dynamic_occlusion_to_csv(rtm_val_data)
+        save_to_csv(val_out_path, headers, occluded_data)
+        print(f"Processed {len(rtm_val_data)} images and saved to val_data_RTMpose.csv\nFailed images : {error_count}")
 
 
 if __name__ == '__main__':
@@ -195,15 +219,19 @@ if __name__ == '__main__':
 
     # Time execution
     start_time = time.time()
+    thresholds = [30, 40, 50, 60, 70, 80, 90]
+    generate_val = False
+    for threshold in thresholds:
 
-    # Configure train & val data (based on MLP train & validation data)
-    train_data = "data\\MLP_Approach\\train\\train_data.csv"
-    validation_data = "data\\MLP_Approach\\validation\\coco_validation_data.csv"
+        # Configure train & val data (based on MLP train & validation data)
+        train_data = f"data\\MLP_Approach\\train\\train_data{threshold}.csv"
+        validation_data = "data\\MLP_Approach\\validation\\coco_validation_data.csv"
 
-    # Configure output paths
-    train_output_path = "data\\RTM_Approach\\train\\train_data_RTMpose.csv"
-    val_output_path = "data\\RTM_Approach\\validation\\val_data_RTMpose.csv"
-    main(train_data, validation_data, cnn_model_path, train_output_path, val_output_path)
+        # Configure output paths
+
+        train_output_path = f"data\\RTM_Approach\\train\\train_data_RTMpose{threshold}.csv"
+        val_output_path = "data\\RTM_Approach\\validation\\val_data_RTMpose.csv"
+        main(train_data, validation_data, cnn_model_path, train_output_path, val_output_path, generate_val)
 
     end_time = time.time()
     print(f"Execution Time: {end_time - start_time:.2f} seconds")

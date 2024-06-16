@@ -251,10 +251,8 @@ class ImageProcessor:
             if should_occlude:
                 visible_count -= 1
                 # Generate noise for x and y
-                noise_x = random.uniform(-noise_level[i], noise_level[i])
-                noise_y = random.uniform(-noise_level[i], noise_level[i])
-                noise_x = random.uniform(-noise_level, noise_level)
-                noise_y = random.uniform(-noise_level, noise_level)
+                noise_x = random.uniform(-noise_level[i // 3], noise_level[i // 3])
+                noise_y = random.uniform(-noise_level[i // 3], noise_level[i // 3])
 
                 # Apply noise and set visibility to 0
                 occluded_keypoints[i] = keypoints[i] + noise_x if keypoints[i] != 0 else 0

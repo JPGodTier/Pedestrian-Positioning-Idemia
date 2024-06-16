@@ -6,7 +6,7 @@ training:
   batch_size: 16
   learning_rate: 0.0001
 data:
-  train_path: data/MLP_Approach/train/train_data.csv
+  train_path: data/MLP_Approach/train/train_data70.csv
   validation_path: data/MLP_Approach/validation/val_data_with_occultation.csv
 cnn:
   model_path: data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip

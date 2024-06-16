@@ -35,8 +35,10 @@ def main(video_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cnn_model_path = "data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip"
     mlp_model_path = os.path.join("models", "20240516_152621_LR0.0001_BS16", "final_model_epoch_32_rmse_0.0689.pth")
+    mlp_model_path = os.path.join("models", "20240613_152804_LR0.0001_BS16", "final_model_epoch_47_rmse_0.0935.pth")
+
     calibration_path = os.path.join(os.getcwd(), "config", "calibration_chessboard.yaml")
-    mlp_settings = {"input_size": 45, "output_size": 2, "layers": [256, 128, 64, 32]}
+    mlp_settings = {"input_size": 51, "output_size": 2, "layers": [256, 128, 64, 32]}
     pipeline_processor = Pipeline3DProcessor(device, cnn_model_path, mlp_model_path, calibration_path, mlp_settings)
 
     cap = cv2.VideoCapture(video_path)
