@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/637207993032912775/5dc223d018064981b533da228eacad89/artifacts
+end_time: 1718643388765
+entry_point_name: ''
+experiment_id: '637207993032912775'
+lifecycle_stage: active
+run_id: 5dc223d018064981b533da228eacad89
+run_name: lower_body_0.3
+run_uuid: 5dc223d018064981b533da228eacad89
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1718641421058
+status: 3
+tags: []
+user_id: guigu
