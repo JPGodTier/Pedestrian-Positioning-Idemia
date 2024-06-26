@@ -10,6 +10,8 @@ from PIL import Image
 from pycocotools.coco import COCO
 from tabulate import tabulate
 import plotly.graph_objects as go
+from scipy.ndimage import convolve1d
+
 
 # -----------------------------------------------------------------------------
 # save_to_csv
@@ -253,5 +255,93 @@ def save_depth_graph(depth_predictions, ground_truths, model_path, name):
     )
     fig = go.Figure(data=[trace_depth_pred, trace_depth_gt], layout=layout)
 
+    # Save to HTML file
+    fig.write_html(os.path.join(model_path, f"{name}_depth_performance.html"))
+
+
+def save_depth_graph2(depth_predictions, ground_truths, model_path, name, kernel_size=5, kernel_type='gaussian'):
+    frames = list(range(len(depth_predictions)))
+
+    # Graph Theme
+    template_theme = "seaborn"
+
+    # Preparing data
+    gt_x = [frame for frame in frames if frame in ground_truths]
+    gt_y = [ground_truths[frame] for frame in gt_x]
+    pred_y = [depth_predictions[i] for i in gt_x]
+
+    # Apply 1D convolution to depth predictions
+    if kernel_type == 'gaussian':
+        # Create a Gaussian kernel
+        sigma = kernel_size / 2.0
+        kernel = np.exp(-np.linspace(-2.0, 2.0, kernel_size)**2 / (2 * sigma**2))
+        kernel /= np.sum(kernel)
+    elif kernel_type == 'average':
+        # Create an averaging kernel
+        kernel = np.ones(kernel_size) / kernel_size
+    else:
+        raise ValueError("Unsupported kernel type. Use 'gaussian' or 'average'.")
+
+    smoothed_predictions = convolve1d(depth_predictions, kernel, mode='reflect')
+
+    # Calculate percentage errors
+    percentage_errors = [abs(pred - gt) / gt * 100 for pred, gt in zip(pred_y, gt_y)]
+    max_error = max(percentage_errors) if percentage_errors else 0
+    avg_error = sum(percentage_errors) / len(percentage_errors) if percentage_errors else 0
+
+    # Creating hover text for each ground truth point
+    hover_texts = [f"Error: {error:.2f}%" for error in percentage_errors]
+
+    # Trace for Original Depth Predictions
+    # trace_depth_pred = go.Scatter(
+    #     x=frames, y=depth_predictions,
+    #     mode='lines+markers',
+    #     name='Predicted Depth',
+    #     marker=dict(color='LightSkyBlue'),
+    #     line=dict(color='DeepSkyBlue')
+    # )
+
+    # Trace for Smoothed Depth Predictions
+    trace_depth_smooth = go.Scatter(
+        x=frames, y=smoothed_predictions,
+        mode='lines',
+        name='Smoothed Predicted Depth',
+        line=dict(color='MediumSeaGreen')
+    )
+
+    # Trace for Ground Truth Depth with hover info
+    trace_depth_gt = go.Scatter(
+        x=gt_x,
+        y=gt_y,
+        mode='markers',
+        name='Ground Truth Depth',
+        marker=dict(color='Gold', size=12, line=dict(color='Black', width=2)),
+        text=hover_texts,
+        hoverinfo='text+y'
+    )
+
+    # Layout settings with annotations for max and average errors
+    annotations = [
+        dict(xref='paper', yref='paper', x=0, y=0.05,
+             text='Max Error: {:.2f}%'.format(max_error),
+             showarrow=False, font=dict(color="Red", size=14)),
+        dict(xref='paper', yref='paper', x=0, y=0,
+             text='Average Error: {:.2f}%'.format(avg_error),
+             showarrow=False, font=dict(color="Green", size=14))
+    ]
+
+    layout = go.Layout(
+        title=f'{name} Depth Estimation Performance',
+        xaxis=dict(title='Frame Number'),
+        yaxis=dict(title='Depth (meters)', autorange=True),
+        hovermode='closest',
+        template=template_theme,
+        legend=dict(title='Metrics', x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.5)'),
+        margin=dict(l=40, r=40, t=40, b=40),
+        annotations=annotations,
+
+    )
+    # fig = go.Figure(data=[trace_depth_pred, trace_depth_smooth, trace_depth_gt], layout=layout)
+    fig = go.Figure(data=[trace_depth_smooth, trace_depth_gt], layout=layout)
     # Save to HTML file
     fig.write_html(os.path.join(model_path, f"{name}_depth_performance.html"))

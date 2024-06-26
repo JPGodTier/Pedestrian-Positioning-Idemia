@@ -2,7 +2,7 @@ import cv2
 import torch
 import os
 from src.Pipelines.Pipeline3dProcessor import Pipeline3DProcessor
-from src.Common.utils import save_depth_graph
+from src.Common.utils import save_depth_graph, save_depth_graph2
 
 ground_truths = {
     0: 3.0,
@@ -34,11 +34,10 @@ def resize_frame(frame, width_scale=100, height_scale=100):
 def main(video_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     cnn_model_path = "data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip"
-    mlp_model_path = os.path.join("models", "20240516_152621_LR0.0001_BS16", "final_model_epoch_32_rmse_0.0689.pth")
-    mlp_model_path = os.path.join("models", "20240613_152804_LR0.0001_BS16", "final_model_epoch_47_rmse_0.0935.pth")
+    mlp_model_path = os.path.join("models", "20240616_205325_LR0.0001_BS16", "final_model_epoch_44_rmse_0.0671.pth")
 
     calibration_path = os.path.join(os.getcwd(), "config", "calibration_chessboard.yaml")
-    mlp_settings = {"input_size": 51, "output_size": 2, "layers": [256, 128, 64, 32]}
+    mlp_settings = {"input_size": 45, "output_size": 2, "layers": [256, 128, 64, 32]}
     pipeline_processor = Pipeline3DProcessor(device, cnn_model_path, mlp_model_path, calibration_path, mlp_settings)
 
     cap = cv2.VideoCapture(video_path)
@@ -64,7 +63,7 @@ def main(video_path):
             cv2.rectangle(frame, (x1, y1), (x1 + width, y1 + height), (0, 255, 0), thickness=3)
 
             if keypoints:
-                feet_2d_position = pipeline_processor.infer_2d_position(keypoints)
+                feet_2d_position = pipeline_processor.infer_2d_position(keypoints[:-6])
                 abs_x, abs_y = int(x1 + feet_2d_position[0] * width), int(y1 + feet_2d_position[1] * height)
                 cv2.circle(frame, (abs_x, abs_y), 10, (0, 0, 255), -1)
 
@@ -87,7 +86,7 @@ def main(video_path):
             break
 
     # Generate Depth plot
-    save_depth_graph(depth_predictions, ground_truths, model_path="DepthStudy", name="DepthAnalysis")
+    save_depth_graph2(depth_predictions, ground_truths, model_path="DepthStudy", name="DepthAnalysis")
 
     cap.release()
     cv2.destroyAllWindows()
