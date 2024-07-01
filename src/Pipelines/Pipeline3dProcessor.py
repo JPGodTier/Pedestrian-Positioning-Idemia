@@ -75,7 +75,8 @@ class Pipeline3DProcessor:
             bbox[2:] += bbox[:2]
 
             inference_result = self.model_detector(frame, bbox)
-            keypoints = inference_result[0, :-2, :].reshape(-1).tolist()
+            # keypoints = inference_result[0, :-2, :].reshape(-1).tolist()
+            keypoints = inference_result[0, :, :].reshape(-1).tolist()
 
             # Zeroise low confidence kps
             updated_kps = self.zero_out_low_confidence_keypoints(keypoints)

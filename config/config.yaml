@@ -6,8 +6,8 @@ training:
   batch_size: 16
   learning_rate: 0.0001
 data:
-  train_path: data/MLP_Approach/train/train_data.csv
-  validation_path: data/MLP_Approach/validation/val_data_with_occultation.csv
+  train_path: data/RTM_Approach/train/train_data_RTMpose80.csv
+  validation_path: data/RTM_Approach/validation/val_data_RTMpose.csv
 cnn:
   model_path: data/CNN_Model/rtmpose-l_simcc-body7_pt-body7_420e-256x192-4dba18fc_20230504.zip
   confidence_threshold: 0.5

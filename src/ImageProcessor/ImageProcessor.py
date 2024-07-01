@@ -78,6 +78,27 @@ class ImageProcessor:
 
     @staticmethod
     def apply_dynamic_occlusion_to_csv(parsed_data, **kwargs):
+        """
+        Applies dynamic occlusion to a list of parsed data points and returns the modified data.
+
+        This method randomly selects one of three occlusion types ('no_occlusion', 'box', 'keypoints')
+        and applies the corresponding occlusion to each data point in the input list.
+
+        Args:
+            parsed_data (list): A list of data points where each data point is expected to be a list
+                containing [origin, img_id, annotation_id, bbox, keypoints, target].
+            **kwargs: Additional keyword arguments for controlling the occlusion behavior.
+                - box_occlusion_chance (float): Probability of applying box occlusion (default is 0.7).
+                - box_scale_factor (tuple): Scale factor range for box occlusion (default is (0.5, 1)).
+                - kp_weight_position (str): Weight position for keypoints occlusion, e.g., "upper_body" (default is "upper_body").
+                - kp_weight_value (float): Weight value for keypoints occlusion (default is 0.7).
+                - kp_min_threshold (int): Minimum number of visible keypoints for keypoints occlusion (default is 5).
+
+        Returns:
+            list: A list of modified data points with applied occlusion. Each data point in the list is a
+                list containing [origin, img_id, annotation_id, modified_bbox, modified_keypoints, modified_target].
+
+        """
         modified_data = []
         for data_point in parsed_data:
             origin, img_id, annotation_id, bbox, keypoints, target = data_point
@@ -251,10 +272,8 @@ class ImageProcessor:
             if should_occlude:
                 visible_count -= 1
                 # Generate noise for x and y
-                noise_x = random.uniform(-noise_level[i], noise_level[i])
-                noise_y = random.uniform(-noise_level[i], noise_level[i])
-                noise_x = random.uniform(-noise_level, noise_level)
-                noise_y = random.uniform(-noise_level, noise_level)
+                noise_x = random.uniform(-noise_level[i // 3], noise_level[i // 3])
+                noise_y = random.uniform(-noise_level[i // 3], noise_level[i // 3])
 
                 # Apply noise and set visibility to 0
                 occluded_keypoints[i] = keypoints[i] + noise_x if keypoints[i] != 0 else 0
