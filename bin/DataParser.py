@@ -81,6 +81,3 @@ def startup_msg():
 if __name__ == "__main__":
     startup_msg()
     main()
-    # visualize(os.path.join(os.getcwd(), "data", "train_data.csv"),
-    #           os.path.join(os.getcwd(), "data", "validation_data.csv"),
-    #           os.path.join(os.getcwd(), "data", "validation_data_with_occlusion.csv"))
