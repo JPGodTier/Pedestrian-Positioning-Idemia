@@ -96,7 +96,7 @@ with mlflow.start_run():
 
     # Loging with MLFLOW
     mlflow.log_param("File Name", exp_name)
-    mlflow.log_param("Data Info", "Annotations only")
+    mlflow.log_param("Data Info", "CNN Keypoint Inference")
     mlflow.log_param("Seed", seed)
     mlflow.log_params(config['data'])
     mlflow.log_params(config['occultation'])

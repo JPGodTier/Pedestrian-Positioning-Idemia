@@ -2,7 +2,7 @@ import cv2
 import torch
 import os
 from src.Pipelines.Pipeline3dProcessor import Pipeline3DProcessor
-from src.Common.utils import save_depth_graph, save_depth_graph2
+from src.Common.utils import save_depth_graph, save_depth_graph_with_ground_truth
 
 ground_truths = {
     0: 3.0,
@@ -86,7 +86,7 @@ def main(video_path):
             break
 
     # Generate Depth plot
-    save_depth_graph2(depth_predictions, ground_truths, model_path="DepthStudy", name="DepthAnalysis")
+    save_depth_graph_with_ground_truth(depth_predictions, ground_truths, model_path="DepthStudy", name="DepthAnalysis")
 
     cap.release()
     cv2.destroyAllWindows()

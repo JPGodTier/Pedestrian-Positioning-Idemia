@@ -20,7 +20,7 @@ def parse_bbox(bbox_str):
         return None
 
 
-def zero_out_low_confidence_keypoints(keypoints, threshold=0.5):
+def zero_out_low_confidence_keypoints(keypoints, threshold):
     """Set keypoints confidence to zero if below a given threshold."""
     for i in range(2, len(keypoints), 3):
         if keypoints[i] < threshold:
@@ -133,7 +133,6 @@ def process_image(detector, images_paths, row, confidence_threshold):
 
     # Normalize inferred keypoints
     normalized_bbox = bbox.copy()
-    normalized_bbox[:2] = [0, 0]
     result, _ = ImageProcessor.normalize_keypoints(updated_keypoints, normalized_bbox)
 
     result_list = [row[1], row[2], row[3], row[4], result, row[6]]
@@ -180,7 +179,7 @@ def create_rtm_csv_parallel(detector, images_paths, input_csv, confidence_thresh
     return results, error_count
 
 
-def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path, generate_validation=True):
+def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path, conf_threshold=0.5):
     try:
         model_path = cnn_path
         model_detector = PoseDetector(model_path=model_path, device_name="cpu", device_id=0)
@@ -197,17 +196,16 @@ def main(csv_train_file, csv_val_file, cnn_path, train_out_path, val_out_path, g
     val_image_paths = {"coco": coco_val_path}
 
     # RTM Train data creation
-    rtm_train_data, error_count = create_rtm_csv_parallel(model_detector, train_image_paths, csv_train_file)
+    rtm_train_data, error_count = create_rtm_csv_parallel(model_detector, train_image_paths, csv_train_file, conf_threshold)
     save_to_csv(train_out_path, headers, rtm_train_data)
     print(f"Processed {len(rtm_train_data)} images and saved to train_data_RTMpose.csv\nFailed images : {error_count}")
 
     # RTM Val data creation
-    if generate_validation:
-        rtm_val_data, error_count = create_rtm_csv_parallel(model_detector, val_image_paths, csv_val_file)
-        coco_val_parser = ImageProcessor()
-        occluded_data = coco_val_parser.apply_dynamic_occlusion_to_csv(rtm_val_data)
-        save_to_csv(val_out_path, headers, occluded_data)
-        print(f"Processed {len(rtm_val_data)} images and saved to val_data_RTMpose.csv\nFailed images : {error_count}")
+    rtm_val_data, error_count = create_rtm_csv_parallel(model_detector, val_image_paths, csv_val_file, conf_threshold)
+    coco_val_parser = ImageProcessor()
+    occluded_data = coco_val_parser.apply_dynamic_occlusion_to_csv(rtm_val_data)
+    save_to_csv(val_out_path, headers, occluded_data)
+    print(f"Processed {len(rtm_val_data)} images and saved to val_data_RTMpose.csv\nFailed images : {error_count}")
 
 
 if __name__ == '__main__':
@@ -219,19 +217,17 @@ if __name__ == '__main__':
 
     # Time execution
     start_time = time.time()
-    thresholds = [30, 40, 50, 60, 70, 80, 90]
-    generate_val = False
-    for threshold in thresholds:
+    threshold = 80
+    conf_threshold = 0.5
+    # Configure train & val data (based on MLP train & validation data)
+    train_data = f"data\\MLP_Approach\\train\\train_data{threshold}.csv"
+    validation_data = "data\\MLP_Approach\\validation\\coco_validation_data_with_occlusion.csv"
 
-        # Configure train & val data (based on MLP train & validation data)
-        train_data = f"data\\MLP_Approach\\train\\train_data{threshold}.csv"
-        validation_data = "data\\MLP_Approach\\validation\\coco_validation_data.csv"
+    # Configure output paths
 
-        # Configure output paths
-
-        train_output_path = f"data\\RTM_Approach\\train\\train_data_RTMpose{threshold}.csv"
-        val_output_path = "data\\RTM_Approach\\validation\\val_data_RTMpose.csv"
-        main(train_data, validation_data, cnn_model_path, train_output_path, val_output_path, generate_val)
+    train_output_path = f"data\\RTM_Approach\\train\\train_data_RTMpose{threshold}.csv"
+    val_output_path = "data\\RTM_Approach\\validation\\val_data_RTMpose.csv"
+    main(train_data, validation_data, cnn_model_path, train_output_path, val_output_path, conf_threshold)
 
     end_time = time.time()
     print(f"Execution Time: {end_time - start_time:.2f} seconds")

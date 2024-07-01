@@ -88,6 +88,7 @@ def train_model(model, train_loader, val_loader, optimizer, loss_function: torch
         print(f"Elapsed time: {time.time() - start_time:.2f}s")
         mlflow.log_metric("Training Loss", avg_loss, step=epoch)
         mlflow.log_metric("Validation Loss", avg_val_loss, step=epoch)
+
     # Save the training loss graph
     save_loss_graph_go(loss_list, model_path, "training")
     save_loss_graph_go(loss_list, model_path, "validation")

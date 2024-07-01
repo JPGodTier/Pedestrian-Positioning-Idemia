@@ -259,7 +259,7 @@ def save_depth_graph(depth_predictions, ground_truths, model_path, name):
     fig.write_html(os.path.join(model_path, f"{name}_depth_performance.html"))
 
 
-def save_depth_graph2(depth_predictions, ground_truths, model_path, name, kernel_size=5, kernel_type='gaussian'):
+def save_depth_graph_with_ground_truth(depth_predictions, ground_truths, model_path, name, kernel_size=5, kernel_type='gaussian'):
     frames = list(range(len(depth_predictions)))
 
     # Graph Theme
@@ -272,12 +272,10 @@ def save_depth_graph2(depth_predictions, ground_truths, model_path, name, kernel
 
     # Apply 1D convolution to depth predictions
     if kernel_type == 'gaussian':
-        # Create a Gaussian kernel
         sigma = kernel_size / 2.0
         kernel = np.exp(-np.linspace(-2.0, 2.0, kernel_size)**2 / (2 * sigma**2))
         kernel /= np.sum(kernel)
     elif kernel_type == 'average':
-        # Create an averaging kernel
         kernel = np.ones(kernel_size) / kernel_size
     else:
         raise ValueError("Unsupported kernel type. Use 'gaussian' or 'average'.")
@@ -291,15 +289,6 @@ def save_depth_graph2(depth_predictions, ground_truths, model_path, name, kernel
 
     # Creating hover text for each ground truth point
     hover_texts = [f"Error: {error:.2f}%" for error in percentage_errors]
-
-    # Trace for Original Depth Predictions
-    # trace_depth_pred = go.Scatter(
-    #     x=frames, y=depth_predictions,
-    #     mode='lines+markers',
-    #     name='Predicted Depth',
-    #     marker=dict(color='LightSkyBlue'),
-    #     line=dict(color='DeepSkyBlue')
-    # )
 
     # Trace for Smoothed Depth Predictions
     trace_depth_smooth = go.Scatter(
@@ -341,7 +330,7 @@ def save_depth_graph2(depth_predictions, ground_truths, model_path, name, kernel
         annotations=annotations,
 
     )
-    # fig = go.Figure(data=[trace_depth_pred, trace_depth_smooth, trace_depth_gt], layout=layout)
     fig = go.Figure(data=[trace_depth_smooth, trace_depth_gt], layout=layout)
+
     # Save to HTML file
     fig.write_html(os.path.join(model_path, f"{name}_depth_performance.html"))
